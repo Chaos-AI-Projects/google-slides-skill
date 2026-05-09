@@ -58,11 +58,11 @@ def test_auto_size_single_child():
 
 
 def test_auto_size_four_children():
-    """4 children -> 2x2 grid."""
+    """4 children -> 2x2 grid in grid layout mode."""
     c = Container(id="four", title="Four", children=[
         {"id": f"c{i}", "label": f"C{i}", "type": "rectangle"} for i in range(4)
     ])
-    auto_size_container(c)
+    auto_size_container(c, layout_mode="grid")
     expected_w = 2 * DEFAULT_CHILD_W + 1 * CHILD_SPACING + 2 * CONTAINER_PADDING
     expected_h = TITLE_BAR_HEIGHT + 2 * DEFAULT_CHILD_H + 1 * CHILD_SPACING + 2 * CONTAINER_PADDING
     assert abs(c.w - expected_w) < 0.001, f"w={c.w}, expected={expected_w}"
@@ -86,7 +86,8 @@ def test_auto_size_explicit_overrides():
 def test_auto_position_basic():
     c1 = Container(id="a", title="A", w=3.0, h=2.0)
     c2 = Container(id="b", title="B", w=3.0, h=2.0)
-    auto_position_containers([c1, c2], area_x=1.0, area_y=1.0, area_w=8.0, area_h=4.0)
+    auto_position_containers([c1, c2], area_x=1.0, area_y=1.0, area_w=8.0, area_h=4.0,
+                             layout_mode="grid")
     assert c1.x == 1.0
     assert c1.y == 1.0
     assert c2.x == 1.0 + 3.0 + 0.25  # gap
@@ -97,7 +98,8 @@ def test_auto_position_wraps():
     """Containers that exceed area width wrap to next row."""
     c1 = Container(id="a", title="A", w=5.0, h=2.0)
     c2 = Container(id="b", title="B", w=5.0, h=2.0)
-    auto_position_containers([c1, c2], area_x=0.5, area_y=0.5, area_w=8.0, area_h=6.0)
+    auto_position_containers([c1, c2], area_x=0.5, area_y=0.5, area_w=8.0, area_h=6.0,
+                             layout_mode="grid")
     assert c1.x == 0.5
     assert c1.y == 0.5
     assert c2.x == 0.5
@@ -136,7 +138,7 @@ def test_child_positions_grid():
                       {"id": f"c{i}", "label": f"C{i}", "type": "rectangle"}
                       for i in range(4)
                   ])
-    placed = _compute_child_positions(c)
+    placed = _compute_child_positions(c, layout_mode="grid")
     assert len(placed) == 4
 
     for child in placed:
@@ -145,6 +147,7 @@ def test_child_positions_grid():
         assert child["_x"] + child["_w"] <= c.x + c.w + 0.01
         assert child["_y"] + child["_h"] <= c.y + c.h + 0.01
 
+    # Grid layout: 2x2 arrangement
     assert placed[0]["_y"] == placed[1]["_y"]
     assert placed[2]["_y"] == placed[3]["_y"]
     assert placed[0]["_y"] < placed[2]["_y"]

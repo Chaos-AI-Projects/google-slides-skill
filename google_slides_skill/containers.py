@@ -876,8 +876,6 @@ def render_containers(page_id: str,
                     dash=conn.get("dash", DASH_SOLID),
                     color=conn.get("color"),
                 )
-                conn_reqs = conn_reqs  # already a list from tuple
-
             requests.extend(conn_reqs)
 
     return requests

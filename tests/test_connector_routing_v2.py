@@ -27,6 +27,9 @@ def test_three_containers_no_crossover():
 
     Layout: [A] [B] [C] side by side.
     Connector from A/child to C/child must route around B, not through it.
+
+    Uses layout_mode="grid" so the 2-layer adjacency validator does not
+    silently drop the non-adjacent connector.
     """
     setup()
     c_a = Container(id="a", title="A", x=1.0, y=1.5, w=2.0, h=2.0,
@@ -42,9 +45,11 @@ def test_three_containers_no_crossover():
     }]
 
     reqs = render_containers("slide1", [c_a, c_b, c_c],
-                             connectors_spec=connectors)
+                             connectors_spec=connectors,
+                             layout_mode="grid")
 
     lines = [r for r in reqs if "createLine" in r]
+    assert len(lines) >= 1, "Expected at least 1 connector segment to be produced"
 
     segments = []
     for lr in lines:
@@ -111,7 +116,11 @@ def test_route_around_obstacles_includes_container_bounds():
 
 
 def test_vertically_stacked_three_containers():
-    """Connector from top to bottom container avoids the middle one."""
+    """Connector from top to bottom container avoids the middle one.
+
+    Uses layout_mode="grid" so the 2-layer adjacency validator does not
+    silently drop the non-adjacent connector.
+    """
     setup()
     c_top = Container(id="top", title="Top", x=3.0, y=1.0, w=3.0, h=1.2,
                       children=[{"id": "a", "label": "A", "type": "service"}])
@@ -126,7 +135,8 @@ def test_vertically_stacked_three_containers():
     }]
 
     reqs = render_containers("slide1", [c_top, c_mid, c_bot],
-                             connectors_spec=connectors)
+                             connectors_spec=connectors,
+                             layout_mode="grid")
 
     lines = [r for r in reqs if "createLine" in r]
     assert len(lines) >= 3, f"Expected >= 3 segments to avoid middle, got {len(lines)}"
