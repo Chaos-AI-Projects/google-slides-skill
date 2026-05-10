@@ -8,6 +8,7 @@ via the Google Slides API.
 Requires matplotlib (tracked in ChaosEternal/memory-solution#261).
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -96,25 +97,31 @@ def upload_formula(latex_str: str) -> str:
     Raises:
         RuntimeError: If the Drive upload fails.
     """
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, f"_formula_{os.getpid()}.png")
+    fd, output_path = tempfile.mkstemp(suffix=".png", prefix="formula_")
+    os.close(fd)
     render_formula(latex_str, output_path=output_path)
 
     # Upload to Drive (multipart with explicit content type)
+    name_hash = hashlib.md5(latex_str.encode()).hexdigest()[:12]
     cmd = [
         "gws", "drive", "files", "create",
         "--params", json.dumps({"uploadType": "multipart"}),
         "--upload", output_path,
         "--upload-content-type", "image/png",
         "--json", json.dumps({
-            "name": f"formula_{id(latex_str)}.png",
+            "name": f"formula_{name_hash}.png",
             "mimeType": "image/png",
         }),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"gws upload failed (exit {result.returncode}): {result.stderr}"
+        )
     output = result.stdout
-    if output.startswith("Using keyring"):
-        output = output.split("\n", 1)[1]
+    json_start = output.find("{")
+    if json_start > 0:
+        output = output[json_start:]
     resp = json.loads(output)
     if "error" in resp:
         raise RuntimeError(
@@ -123,7 +130,7 @@ def upload_formula(latex_str: str) -> str:
     file_id = resp["id"]
 
     # Make publicly readable
-    subprocess.run(
+    perm_result = subprocess.run(
         [
             "gws", "drive", "permissions", "create",
             "--params", json.dumps({"fileId": file_id}),
@@ -132,6 +139,11 @@ def upload_formula(latex_str: str) -> str:
         capture_output=True,
         text=True,
     )
+    if perm_result.returncode != 0:
+        raise RuntimeError(
+            f"Drive permission update failed (exit {perm_result.returncode}): "
+            f"{perm_result.stderr}"
+        )
 
     # Clean up local temp file
     if os.path.exists(output_path):

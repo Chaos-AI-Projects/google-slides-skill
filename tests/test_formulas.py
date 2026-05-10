@@ -158,6 +158,58 @@ def test_upload_formula_strips_keyring_prefix(monkeypatch):
     assert "abc123" in url
 
 
+def test_upload_formula_raises_on_upload_failure(monkeypatch):
+    """upload_formula should raise RuntimeError when gws exits non-zero."""
+    if not _check_matplotlib():
+        return  # skip: matplotlib not installed
+
+    import subprocess
+    from google_slides_skill.formulas import upload_formula
+
+    def fake_run(cmd, *, capture_output=False, text=False):
+        if cmd[1] == "drive" and cmd[2] == "files" and cmd[3] == "create":
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="gws: command not found",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    try:
+        upload_formula(r"$x$")
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert "gws upload failed" in str(e)
+
+
+def test_upload_formula_raises_on_permission_failure(monkeypatch):
+    """upload_formula should raise RuntimeError when permission update fails."""
+    if not _check_matplotlib():
+        return  # skip: matplotlib not installed
+
+    import subprocess
+    from google_slides_skill.formulas import upload_formula
+
+    def fake_run(cmd, *, capture_output=False, text=False):
+        if cmd[1] == "drive" and cmd[2] == "files" and cmd[3] == "create":
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout='{"id": "perm_test"}', stderr="",
+            )
+        elif cmd[1] == "drive" and cmd[2] == "permissions":
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="permission denied",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    try:
+        upload_formula(r"$x$")
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert "permission" in str(e).lower()
+
+
 def test_upload_formula_cleans_up_temp_file(monkeypatch):
     """upload_formula should delete the temp PNG after upload."""
     if not _check_matplotlib():
