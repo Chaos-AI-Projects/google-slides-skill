@@ -8,7 +8,9 @@ via the Google Slides API.
 Requires matplotlib (tracked in ChaosEternal/memory-solution#261).
 """
 
+import json
 import os
+import subprocess
 import tempfile
 
 # Lazy import -- matplotlib may not be installed yet.
@@ -73,6 +75,69 @@ def render_formula(latex: str, *, dpi: int = 200,
     plt.close(fig)
 
     return output_path
+
+
+def upload_formula(latex_str: str) -> str:
+    """Render a LaTeX formula, upload to Google Drive, return public URL.
+
+    Renders the formula as a PNG via ``render_formula``, uploads it to
+    Google Drive using the ``gws`` CLI, sets public read permissions, and
+    returns an ``lh3.googleusercontent.com`` URL suitable for use with
+    ``formula_image_request``.
+
+    Requires the ``gws`` CLI to be available on ``$PATH``.
+
+    Args:
+        latex_str: LaTeX math string (e.g. ``r"$E = mc^2$"``).
+
+    Returns:
+        Public URL of the uploaded formula image.
+
+    Raises:
+        RuntimeError: If the Drive upload fails.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, f"_formula_{os.getpid()}.png")
+    render_formula(latex_str, output_path=output_path)
+
+    # Upload to Drive (multipart with explicit content type)
+    cmd = [
+        "gws", "drive", "files", "create",
+        "--params", json.dumps({"uploadType": "multipart"}),
+        "--upload", output_path,
+        "--upload-content-type", "image/png",
+        "--json", json.dumps({
+            "name": f"formula_{id(latex_str)}.png",
+            "mimeType": "image/png",
+        }),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    output = result.stdout
+    if output.startswith("Using keyring"):
+        output = output.split("\n", 1)[1]
+    resp = json.loads(output)
+    if "error" in resp:
+        raise RuntimeError(
+            f"Drive upload error: {resp['error'].get('message', resp['error'])}"
+        )
+    file_id = resp["id"]
+
+    # Make publicly readable
+    subprocess.run(
+        [
+            "gws", "drive", "permissions", "create",
+            "--params", json.dumps({"fileId": file_id}),
+            "--json", json.dumps({"role": "reader", "type": "anyone"}),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    # Clean up local temp file
+    if os.path.exists(output_path):
+        os.unlink(output_path)
+
+    return f"https://lh3.googleusercontent.com/d/{file_id}"
 
 
 def formula_image_request(page_id: str, image_url: str,

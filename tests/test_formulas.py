@@ -93,3 +93,92 @@ def test_render_formula_temp_file():
     finally:
         if os.path.exists(path):
             os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# upload_formula: requires matplotlib + gws CLI
+# ---------------------------------------------------------------------------
+
+def test_upload_formula_renders_and_uploads(monkeypatch):
+    """upload_formula should render, upload to Drive, set perms, and return URL."""
+    if not _check_matplotlib():
+        return  # skip: matplotlib not installed
+
+    import subprocess
+    from google_slides_skill.formulas import upload_formula
+
+    calls = []
+
+    def fake_run(cmd, *, capture_output=False, text=False):
+        calls.append(cmd)
+        if cmd[1] == "drive" and cmd[2] == "files" and cmd[3] == "create":
+            # Verify upload flags
+            assert "--upload-content-type" in cmd, "must use --upload-content-type"
+            idx = cmd.index("--upload-content-type")
+            assert cmd[idx + 1] == "image/png"
+            assert "--json" in cmd, "must pass --json metadata"
+            # Return fake file ID
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout='{"id": "fake_file_id_123"}', stderr=""
+            )
+        elif cmd[1] == "drive" and cmd[2] == "permissions":
+            # Permission creation
+            return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    url = upload_formula(r"$E = mc^2$")
+    assert "fake_file_id_123" in url
+    assert url.startswith("https://lh3.googleusercontent.com/d/")
+    # Should have called gws twice: upload + permissions
+    assert len(calls) == 2
+
+
+def test_upload_formula_strips_keyring_prefix(monkeypatch):
+    """upload_formula should handle 'Using keyring' prefix in gws output."""
+    if not _check_matplotlib():
+        return  # skip: matplotlib not installed
+
+    import subprocess
+    from google_slides_skill.formulas import upload_formula
+
+    def fake_run(cmd, *, capture_output=False, text=False):
+        if cmd[1] == "drive" and cmd[2] == "files" and cmd[3] == "create":
+            return subprocess.CompletedProcess(
+                cmd, 0,
+                stdout='Using keyring backend: keyring\n{"id": "abc123"}',
+                stderr="",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    url = upload_formula(r"$x^2$")
+    assert "abc123" in url
+
+
+def test_upload_formula_cleans_up_temp_file(monkeypatch):
+    """upload_formula should delete the temp PNG after upload."""
+    if not _check_matplotlib():
+        return  # skip: matplotlib not installed
+
+    import subprocess
+    from google_slides_skill.formulas import upload_formula
+
+    uploaded_path = []
+
+    def fake_run(cmd, *, capture_output=False, text=False):
+        if cmd[1] == "drive" and cmd[2] == "files" and cmd[3] == "create":
+            idx = cmd.index("--upload")
+            uploaded_path.append(cmd[idx + 1])
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout='{"id": "tmp_test"}', stderr=""
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    upload_formula(r"$y$")
+    assert len(uploaded_path) == 1
+    assert not os.path.exists(uploaded_path[0]), "temp file should be cleaned up"
