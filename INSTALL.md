@@ -4,9 +4,7 @@
 
 - Python 3.12+
 - [Claude Code](https://claude.ai/code) CLI installed
-- [`gws`](https://github.com/googleworkspace/cli) CLI for Google Workspace API access
-- Google Cloud project with the Slides API and Drive API enabled
-- OAuth credentials configured for `gws`
+- [`gws`](https://github.com/googleworkspace/cli) CLI installed and authenticated (see Step 2)
 
 ### Optional
 
@@ -27,14 +25,7 @@ pip install -e ".[formulas]"
 
 ## Step 2 -- Configure Google API credentials
 
-The skill uses `gws` to interact with Google Slides and Drive APIs. Set up `gws` with your Google Cloud credentials:
-
-1. Create a Google Cloud project at https://console.cloud.google.com
-2. Enable the **Google Slides API** and **Google Drive API**
-3. Create OAuth 2.0 credentials (Desktop application type)
-4. Run `gws auth login` to authenticate
-
-For headless or CI environments, you can use a service account instead. Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your service account key JSON file and use `gws auth login --service-account`.
+The skill uses `gws` to interact with Google Slides and Drive APIs. Follow the [`gws` authentication guide](https://github.com/googleworkspace/cli) to set up credentials with access to the **Google Slides API** and **Google Drive API**.
 
 Verify the setup:
 
@@ -46,16 +37,16 @@ This should return a JSON response with a `presentationId`. Delete the test pres
 
 ## Step 3 -- Register the skill with Claude Code
 
-Copy `skill.md` to your Claude Code commands directory. Run these commands from the **monorepo root** (the directory containing `google-slides-skill/`):
+Copy `skill.md` to your Claude Code commands directory:
 
 ```bash
 # For project-level registration (recommended)
 mkdir -p .claude/commands
-cp google-slides-skill/skill.md .claude/commands/google-slides.md
+cp skill.md .claude/commands/google-slides.md
 
 # Or for user-level registration (available in all projects)
 mkdir -p ~/.claude/commands
-cp google-slides-skill/skill.md ~/.claude/commands/google-slides.md
+cp skill.md ~/.claude/commands/google-slides.md
 ```
 
 The skill will be available as `/google-slides` in Claude Code.
