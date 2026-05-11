@@ -4,7 +4,7 @@
 
 - Python 3.12+
 - [Claude Code](https://claude.ai/code) CLI installed
-- [`gws`](https://github.com/nicholasgasior/gws) CLI for Google Workspace API access
+- [`gws`](https://github.com/googleworkspace/cli) CLI for Google Workspace API access
 - Google Cloud project with the Slides API and Drive API enabled
 - OAuth credentials configured for `gws`
 
@@ -34,6 +34,8 @@ The skill uses `gws` to interact with Google Slides and Drive APIs. Set up `gws`
 3. Create OAuth 2.0 credentials (Desktop application type)
 4. Run `gws auth login` to authenticate
 
+For headless or CI environments, you can use a service account instead. Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your service account key JSON file and use `gws auth login --service-account`.
+
 Verify the setup:
 
 ```bash
@@ -44,7 +46,7 @@ This should return a JSON response with a `presentationId`. Delete the test pres
 
 ## Step 3 -- Register the skill with Claude Code
 
-Copy `skill.md` to your Claude Code commands directory:
+Copy `skill.md` to your Claude Code commands directory. Run these commands from the **monorepo root** (the directory containing `google-slides-skill/`):
 
 ```bash
 # For project-level registration (recommended)

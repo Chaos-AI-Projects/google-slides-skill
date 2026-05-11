@@ -4,6 +4,8 @@ description: Create a Google Slides presentation programmatically using the goog
 
 Create a Google Slides presentation. The user will describe the content they want -- a topic summary, a paper overview, a project status deck, etc.
 
+**Prerequisites:** Requires the `google_slides_skill` Python package and the [`gws`](https://github.com/googleworkspace/cli) CLI to be installed and authenticated. See `INSTALL.md` for setup instructions.
+
 ## Workflow
 
 ### Step 1 -- Gather content
@@ -69,6 +71,7 @@ Return the Google Slides URL to the caller.
 
 ### Layouts (`google_slides_skill.layouts`)
 
+- `LAYOUTS` -- dict of all layout definitions, keyed by name
 - `get_layout(name)` -- returns layout dict with element positions and text roles
 - `list_layouts()` -- returns all available layout names as a list
 - `to_emu(inches)` -- convert inches to EMU (1 inch = 914,400 EMU)
@@ -84,6 +87,7 @@ Return the Google Slides URL to the caller.
 - `fit_text(text, role, width_inches)` -- fit text to width, returns truncated text
 - `fit_font_size(text, role, area)` -- compute font size to avoid overflow
 - `get_capacity(role, area)` -- estimated character capacity for a text role in an area
+- `get_bullet_capacity(role, area)` -- estimated bullet point capacity for a text role in an area
 
 ### Shapes (`google_slides_skill.shapes`)
 
