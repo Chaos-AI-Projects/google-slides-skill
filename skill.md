@@ -42,7 +42,7 @@ Write a Python script that uses `google_slides_skill` to generate the presentati
    - `from google_slides_skill import get_layout, to_emu, FONT_SPEC, to_slides_text_style`
    - `from google_slides_skill.shapes import rectangle, rounded_rectangle, text_label, arrow`
    - `from google_slides_skill.tables import create_table`
-   - `from google_slides_skill.connectors import straight_connector, elbow_connector`
+   - `from google_slides_skill.connectors import straight_connector, elbow_connector, smart_elbow_connector`
    - `from google_slides_skill.containers import Container, render_containers`
    - `from google_slides_skill.diagrams.flowchart import render_flowchart`
    - `from google_slides_skill.diagrams.chart import render_bar_chart, render_comparison_chart`
@@ -69,8 +69,8 @@ Return the Google Slides URL to the caller.
 
 ### Layouts (`google_slides_skill.layouts`)
 
-- `get_layout(name)` -- returns layout dict with element positions
-- `list_layouts()` -- returns all available layout names
+- `get_layout(name)` -- returns layout dict with element positions and text roles
+- `list_layouts()` -- returns all available layout names as a list
 - `to_emu(inches)` -- convert inches to EMU (1 inch = 914,400 EMU)
 - Canvas: 10.0 x 5.625 inches (16:9)
 
