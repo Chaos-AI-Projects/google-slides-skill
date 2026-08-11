@@ -1,0 +1,6 @@
+[project]
+name = "google-slides-skill"
+
+[[actions]]
+name = "copybara-sync"
+command = "scripts/copybara-sync.sh google-slides-skill"
