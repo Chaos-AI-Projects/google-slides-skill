@@ -87,6 +87,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
+These are pure unit tests. They make no Google API calls and need no network access or credentials.
+
+Shape IDs come from a global counter, `_next_id()` in `shapes.py`. Call `reset_ids()` between test runs so IDs stay deterministic.
+
 ## Unit Coordinates
 
 All positioning uses **EMU** (English Metric Units) internally:
